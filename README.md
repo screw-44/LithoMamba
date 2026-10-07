@@ -55,7 +55,7 @@ Table II also reports results on REFICS at 32 nm and 90 nm:
 | 32 nm | 0.84 | 41.60 | 18.62 | 0.37 |
 | 90 nm | 0.78 | 47.37 | 17.04 | 0.34 |
 
-These values are transcribed from the published paper. They have **not been remeasured with this cleaned code release**. The paper reports an NVIDIA RTX 4090; historical logs may reflect earlier experiments.
+These values are transcribed from the published paper. They have **not been remeasured with this cleaned code release**. The paper reports an NVIDIA RTX 4090.
 
 ## Release status
 
@@ -63,7 +63,6 @@ These values are transcribed from the published paper. They have **not been reme
 |:--|:--|
 | Mamba generator and local discriminator | Included |
 | Training and paired inference entry points | Included, with release maintenance fixes |
-| Historical training logs | Included in `logs/`; not a verified final-paper reproduction bundle |
 | 14 nm manufacturing dataset | Not distributed |
 | Prepared REFICS layout/SEM pairs | Not bundled; obtain data from its source and prepare matching pairs |
 | Trained LithoMamba weights / optional VMamba initialization | Not bundled |
@@ -170,7 +169,6 @@ data/                    Paired image loader and augmentation
 options/                 Training and inference arguments
 train_mamba.py           Training entry point
 test.py                  Paired inference entry point
-logs/                    Historical experiment logs
 docs/CODE_REVIEW.md       Maintenance fixes and paper/code differences
 assets/                  Paper architecture and qualitative comparison
 ```

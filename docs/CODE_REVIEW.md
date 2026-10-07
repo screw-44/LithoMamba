@@ -4,7 +4,7 @@ Reviewed on 2026-10-07 against the published DATE 2026 paper, *LithoMamba: High-
 
 ## Scope
 
-The review covers the released training/inference entry points, paired data loader, adversarial loss, checkpoint helpers, environment, and the core model's correspondence to the paper. It does not verify historical logs as final experiments or reproduce the paper's metrics.
+The review covers the released training/inference entry points, paired data loader, adversarial loss, checkpoint helpers, environment, and the core model's correspondence to the paper. It does not reproduce the paper's metrics.
 
 ## Maintenance fixes
 
@@ -23,7 +23,7 @@ The review covers the released training/inference entry points, paired data load
 | Training ran at module import and hard-coded its epoch budget. A standalone debug block stepped the wrong optimizer for the discriminator. | Add a `main` guard and `--epochs`; remove the outdated standalone debug loop. |
 | The environment was an Apple-specific Conda export with a personal absolute prefix and omitted required Mamba dependencies. | Supply a minimal reference environment and explicit CUDA extension installation instructions. Installation on CUDA has not been validated here. |
 
-These fixes affect future optimization and data processing, so new runs should not be presented as identical to historical logs. Existing model parameter names and the selective-scan network architecture are retained.
+These fixes affect future optimization and data processing, so new runs should not be presented as identical to historical experiments. Existing model parameter names and the selective-scan network architecture are retained.
 
 ## Paper/code differences requiring the final experiment configuration
 
@@ -34,7 +34,7 @@ These fixes affect future optimization and data processing, so new runs should n
 | Generator bottleneck depth | Figure 1 labels four bottleneck VSS blocks. | `VSSM` defaults to `depths=[2,2,9,2]`; the wrapper passes no alternate depths. Confirm the trained experiment configuration before changing network shapes or checkpoint compatibility. |
 | Four-direction scan fusion | Figure 1 and Section II-A describe averaging four scan outputs. | `forward_corev0` sums four aligned outputs before LayerNorm. This is not written identically to the paper; the following normalization may absorb most of the scale change. |
 | Legacy edge threshold | No extra edge term in the stated composite objective. | The historical `240/255` threshold is applied to tensors normalized to `[-1,1]`. It is not equivalent to a raw grayscale intensity threshold of 240/255. |
-| Training hardware | RTX 4090 (Section III-B). | The old README said RTX 3090. Documentation now cites the published paper; logs are identified as historical. |
+| Training hardware | RTX 4090 (Section III-B). | The old README said RTX 3090. Documentation now cites the published paper. |
 | Pretraining and schedule | REFICS experiments are described as trained from scratch; the full schedule is not specified. | Initialization is optional. The retained 500-epoch default comes from the original script and is not a verified final-paper schedule. |
 
 A confirmed final-paper configuration is needed to settle these differences. The published metrics are reference results, not a guarantee for the current default settings.

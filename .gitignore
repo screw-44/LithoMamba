@@ -8,5 +8,6 @@ datasets/
 pretrained_ckpt/
 checkpoints/
 results/
+logs/
 *.pth
 *.pt
