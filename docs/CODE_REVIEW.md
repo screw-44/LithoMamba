@@ -47,7 +47,7 @@ A confirmed final-paper configuration is needed to settle these differences. The
 - **Baselines:** Fourier/transformer model definitions exist, but not all final-paper baselines or their training/evaluation entry points are released.
 - **Warm starts:** saved checkpoints contain network weights and an epoch marker, not optimizer/scaler/RNG state. Continuing training is not an exact resumption.
 - **Dependencies:** selective-scan kernels require a compatible NVIDIA CUDA installation. The optional CLIP defect utility additionally requires `transformers`, downloads CLIP weights when executed, and uses historical sample paths; it is outside the main pipeline.
-- **Repository hygiene:** `.idea`, `.DS_Store` and cached `.pyc` files were already tracked in the original release. The new `.gitignore` prevents new local artifacts; historical tracked files are retained in this maintenance change.
+- **Repository hygiene:** tracked `.idea` settings, `.DS_Store` metadata, Python bytecode caches and the maintenance `tests/` directory have been removed. `.gitignore` excludes these local artifacts from future commits.
 - **Attribution:** upstream Mamba/VMamba/Mamba-UNet work is acknowledged. Check upstream notices before redistributing imported components independently.
 
 ## Validation performed
@@ -59,4 +59,4 @@ A confirmed final-paper configuration is needed to settle these differences. The
 - Both command-line `--help` entry points without importing CUDA scan kernels.
 - Python syntax compilation, Git whitespace checks and README relative-path checks.
 
-Regression checks run on macOS CPU with Python 3.12, PyTorch 2.5.0 and torchvision 0.20.0. **No end-to-end CUDA model forward/backward pass, GPU extension installation, dataset training or paper-metric reproduction was performed.**
+Regression checks ran during maintenance on macOS CPU with Python 3.12, PyTorch 2.5.0 and torchvision 0.20.0; their test files are not included in the public repository. **No end-to-end CUDA model forward/backward pass, GPU extension installation, dataset training or paper-metric reproduction was performed.**

@@ -3,6 +3,7 @@ __pycache__/
 .DS_Store
 .idea/
 .pytest_cache/
+tests/
 .venv/
 datasets/
 pretrained_ckpt/

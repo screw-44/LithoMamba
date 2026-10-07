@@ -175,17 +175,6 @@ assets/                  Paper architecture and qualitative comparison
 
 Other files are historical experiment utilities; their presence does not imply complete, runnable baseline reproduction pipelines. `caseStudy_defectDetection.py` is an optional CLIP-based exploratory utility, not the paper's evaluation protocol.
 
-## Validation
-
-Maintenance regression tests cover full-batch adversarial loss, paired-data handling, deterministic augmentation, checkpoint device preservation, and both command-line help entry points. They can run on CPU without Mamba CUDA extensions:
-
-```bash
-python -m pip install pytest
-python -m pytest -q tests
-```
-
-See [the code review](docs/CODE_REVIEW.md) for the validation scope and remaining reproduction gaps.
-
 ## Citation
 
 ```bibtex
