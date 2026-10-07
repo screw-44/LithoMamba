@@ -1,25 +1,14 @@
-from options.base_options import BaseOptions
+"""Arguments used by the paired inference entry point test.py."""
+
+from .base_options import BaseOptions
 
 
 class TestOptions(BaseOptions):
-    """This class includes test options.
-
-    It also includes shared options defined in BaseOptions.
-    """
-
     def initialize(self):
-        BaseOptions.initialize(self) # define shared options
-        self.parser.add_argument('--results_dir', type=str, default='./results/', help='saves results here.')
-        self.parser.add_argument('--aspect_ratio', type=float, default=1.0, help='aspect ratio of result images')
-        self.parser.add_argument('--phase', type=str, default='test', help='train, val, test, etc')
-        # Dropout and Batchnorm has different behavioir during training and test.
-        self.parser.add_argument('--eval', action='store_true', help='use eval mode during test time.')
-        self.parser.add_argument('--num_test', type=int, default=50, help='how many test images to run')
+        super().initialize()
+        self.parser.add_argument('--results_dir', default='./results/', help='PNG prediction directory')
+        self.parser.add_argument('--num_test', type=int, default=50, help='maximum images to generate')
         self.parser.add_argument('--which_epoch', default='latest', help='generator checkpoint epoch to load')
-        # rewrite devalue values
-        self.parser.set_defaults(model='mamba', is_train=False,
+        self.parser.set_defaults(is_train=False,
                                  layout_image_dir='./datasets/test/layout',
                                  sem_image_dir='./datasets/test/sem')
-        # To avoid cropping, the load_size should be the same as crop_size
-        self.parser.set_defaults(load_size=self.parser.get_default('crop_size'))
-        return self.parser

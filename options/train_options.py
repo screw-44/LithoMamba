@@ -1,42 +1,27 @@
+"""Arguments used by train_mamba.py."""
+
+import argparse
 from .base_options import BaseOptions
+
 
 class TrainOptions(BaseOptions):
     def initialize(self):
-        BaseOptions.initialize(self)
-        # for displays
-        self.parser.add_argument('--display_freq', type=int, default=5, help='frequency of showing training results on screen')
-        self.parser.add_argument('--print_freq', type=int, default=100, help='frequency of showing training results on console')
-        self.parser.add_argument('--save_latest_freq', type=int, default=1000, help='frequency of saving the latest results')
-        self.parser.add_argument('--save_epoch_freq', type=int, default=10, help='frequency of saving checkpoints at the end of epochs')
-        self.parser.add_argument('--no_html', action='store_true', help='do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/')
-        self.parser.add_argument('--debug', action='store_true', help='only do one epoch and displays at each iteration')
-
-        # for training
-        self.parser.add_argument('--continue_train', action='store_true', help='continue training: load the latest model')
-        self.parser.add_argument('--which_epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
-        self.parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
-        self.parser.add_argument('--niter', type=int, default=100, help='# of iter at starting learning rate')
-        self.parser.add_argument('--niter_decay', type=int, default=100, help='# of iter to linearly decay learning rate to zero')
-        self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
-        self.parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
+        super().initialize()
+        self.parser.add_argument('--display_freq', type=int, default=5,
+                                 help='save checkpoints and preview images every this many epochs')
+        self.parser.add_argument('--continue_train', action='store_true',
+                                 help='warm start from saved generator/discriminator weights')
+        self.parser.add_argument('--which_epoch', default='latest', help='checkpoint epoch to load')
+        self.parser.add_argument('--pretrained_path', default='',
+                                 help='optional VMamba initialization checkpoint for fresh training')
+        self.parser.add_argument('--fp16', action=argparse.BooleanOptionalAction, default=True,
+                                 help='train with AMP; --no-fp16 disables mixed precision')
+        self.parser.add_argument('--beta1', type=float, default=0.5, help='Adam first-moment coefficient')
+        self.parser.add_argument('--lr', type=float, default=0.0002, help='Adam learning rate')
         self.parser.add_argument('--epochs', type=int, default=500, help='total training epochs')
         self.parser.add_argument('--lambda_l1', type=float, default=1.0,
                                  help='reconstruction weight; legacy default 1.0, paper reports 0.1')
         self.parser.add_argument('--lambda_edge', type=float, default=1.0,
-                                 help='legacy edge-region loss weight; use 0 for the paper composite objective')
+                                 help='legacy edge-region loss weight; use 0 for the paper objective')
         self.parser.add_argument('--edge_threshold', type=float, default=240 / 255,
                                  help='legacy edge threshold in the normalized tensor domain')
-
-        # for discriminators
-        self.parser.add_argument('--num_D', type=int, default=2, help='number of discriminators to use')
-        self.parser.add_argument('--n_layers_D', type=int, default=3, help='only used if which_model_netD==n_layers')
-        # TODO: not sure what is this
-        self.parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in first conv layer')
-        self.parser.add_argument('--lambda_feat', type=float, default=10.0, help='weight for feature matching loss')
-        self.parser.add_argument('--no_ganFeat_loss', action='store_true', help='if specified, do *not* use discriminator feature matching loss')
-        self.parser.add_argument('--no_vgg_loss', action='store_true', help='if specified, do *not* use VGG feature matching loss')
-        self.parser.add_argument('--use_sigmoid', action='store_true', help='do *not* use least square GAN, if false, use vanilla GAN')
-        self.parser.add_argument('--pool_size', type=int, default=0, help='the size of image buffer that stores previously generated images')
-
-    def parse(self, save=True):
-        return super().parse(save=save)

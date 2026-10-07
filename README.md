@@ -23,7 +23,7 @@ East China Normal University · Shanghai Innovation Institution
 
 LithoMamba translates IC layout masks into realistic scanning electron microscope (SEM) images. A **Mamba generator** captures long-range interactions through selective state-space modeling, while a **local convolutional discriminator** supplies spatial feedback for fine pattern details.
 
-This is the author-maintained research code accompanying the DATE 2026 paper. The repository was previously named **Mask2Litho**; the old README's **MPGNet** title has been replaced with the published paper identity.
+This repository contains the research implementation accompanying the DATE 2026 paper.
 
 ![LithoMamba architecture from Figure 1 of the paper](assets/architecture.jpg)
 
@@ -162,9 +162,6 @@ This entry point currently consumes paired data, including SEM target files. It 
 ```text
 model/mamba/             MambaGAN wrapper and selective-scan generator
 model/network_module.py  Local discriminator and adversarial loss
-model/cfno.py            Fourier baseline model definition
-model/doinn.py            DOINN baseline model definition
-model/trans/             Transformer baseline components
 data/                    Paired image loader and augmentation
 options/                 Training and inference arguments
 train_mamba.py           Training entry point
@@ -173,7 +170,7 @@ docs/CODE_REVIEW.md       Maintenance fixes and paper/code differences
 assets/                  Paper architecture and qualitative comparison
 ```
 
-Other files are historical experiment utilities; their presence does not imply complete, runnable baseline reproduction pipelines. `caseStudy_defectDetection.py` is an optional CLIP-based exploratory utility, not the paper's evaluation protocol.
+The release contains the LithoMamba training and paired inference pipeline. Baseline implementations and one-off experiment utilities are not bundled. Command-line help lists only arguments used by these entry points.
 
 ## Citation
 

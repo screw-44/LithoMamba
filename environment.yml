@@ -9,9 +9,7 @@ dependencies:
       - torchvision==0.20.0
       - numpy==1.26.4
       - pillow==11.0.0
-      - scipy==1.14.1
       - timm==0.9.16
       - einops==0.8.0
-      - fvcore==0.1.5.post20221221
       - tqdm==4.66.5
 # Install causal-conv1d and mamba-ssm separately after PyTorch; see README.
