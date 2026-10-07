@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use LithoMamba in your research, please cite the DATE 2026 paper."
+title: "LithoMamba: High-fidelity lithography simulation with State Space Models"
+type: software
+repository-code: "https://github.com/screw-44/LithoMamba"
+license: Apache-2.0
+authors:
+  - family-names: He
+    given-names: Xinyu
+  - family-names: Wang
+    given-names: Daohui
+  - family-names: Lyu
+    given-names: Shujing
+  - family-names: Shamsolmoali
+    given-names: Pourya
+  - family-names: Shen
+    given-names: Jiwei
+  - family-names: Lu
+    given-names: Yue
+preferred-citation:
+  type: conference-paper
+  title: "LithoMamba: High-fidelity lithography simulation with State Space Models"
+  authors:
+    - family-names: He
+      given-names: Xinyu
+    - family-names: Wang
+      given-names: Daohui
+    - family-names: Lyu
+      given-names: Shujing
+    - family-names: Shamsolmoali
+      given-names: Pourya
+    - family-names: Shen
+      given-names: Jiwei
+    - family-names: Lu
+      given-names: Yue
+  collection-title: "2026 Design, Automation & Test in Europe Conference (DATE)"
+  year: 2026
+  start: 1
+  end: 6
+  doi: "10.23919/DATE69613.2026.11539705"

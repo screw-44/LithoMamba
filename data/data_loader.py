@@ -1,4 +1,4 @@
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from data.dataset import AlignedDataset
 
 
@@ -7,6 +7,10 @@ class AlignedDatasetLoader:
         self.opt = opt
         self.dataset = AlignedDataset(opt)
         print("dataset {} was created".format(self.dataset.name))
+        if self.opt.max_dataset_size < len(self.dataset):
+            self.dataset = Subset(self.dataset, range(max(0, int(self.opt.max_dataset_size))))
+        if len(self.dataset) == 0:
+            raise ValueError('No image pairs selected; check --max_dataset_size.')
         self.dataloader = DataLoader(
             self.dataset,
             batch_size=self.opt.batch_size,
@@ -15,7 +19,7 @@ class AlignedDatasetLoader:
         )
 
     def __len__(self):
-        return min(len(self.dataset), self.opt.max_dataset_size)
+        return len(self.dataset)
 
     @staticmethod
     def name():

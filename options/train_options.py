@@ -1,7 +1,4 @@
 from .base_options import BaseOptions
-import os
-from util import util
-import torch
 
 class TrainOptions(BaseOptions):
     def initialize(self):
@@ -22,6 +19,13 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--niter_decay', type=int, default=100, help='# of iter to linearly decay learning rate to zero')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         self.parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
+        self.parser.add_argument('--epochs', type=int, default=500, help='total training epochs')
+        self.parser.add_argument('--lambda_l1', type=float, default=1.0,
+                                 help='reconstruction weight; legacy default 1.0, paper reports 0.1')
+        self.parser.add_argument('--lambda_edge', type=float, default=1.0,
+                                 help='legacy edge-region loss weight; use 0 for the paper composite objective')
+        self.parser.add_argument('--edge_threshold', type=float, default=240 / 255,
+                                 help='legacy edge threshold in the normalized tensor domain')
 
         # for discriminators
         self.parser.add_argument('--num_D', type=int, default=2, help='number of discriminators to use')
@@ -35,30 +39,4 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--pool_size', type=int, default=0, help='the size of image buffer that stores previously generated images')
 
     def parse(self, save=True):
-        if not self.initialized:
-            self.initialize()
-        self.opt = self.parser.parse_args()
-
-        if torch.cuda.is_available():
-            self.opt.device = 'cuda'
-        else:
-            self.opt.device = 'mps:0'
-
-        """ Python vars() funcion is used to retrieve the __dict__ attribute """
-        args = vars(self.opt)
-        print('------------ options -------------')
-        for k, v in sorted(args.items()):
-            print('%s: %s' % (str(k), str(v)))
-        print('-------------- End ----------------')
-
-        # save to the disk
-        expr_dir = str(os.path.join(self.opt.checkpoints_dir, self.opt.name))
-        if save and not self.opt.continue_train:
-            util.mkdir(expr_dir)
-            file_name = os.path.join(expr_dir, 'opt.txt')
-            with open(file_name, 'wt') as opt_file:
-                opt_file.write('------------ options -------------\n')
-                for k, v in sorted(args.items()):
-                    opt_file.write('%s: %s\n' % (str(k), str(v)))
-                opt_file.write('-------------- End ----------------\n')
-        return self.opt
+        return super().parse(save=save)

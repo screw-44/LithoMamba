@@ -14,14 +14,15 @@ class BaseOptions:
         # experiment specifics
         self.parser.add_argument('--name', type=str, default='DefaultExperimentName',
                                  help='name of the experiment. It decides where to store samples and models')
-        self.parser.add_argument("--is_train", type=bool, default=True)
-        self.parser.add_argument("--device", type=str, default='mps:0')
-        self.parser.add_argument('--gpu_ids', type=int, default=3,
-                                 help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
+        self.parser.set_defaults(is_train=True)
+        self.parser.add_argument('--device', default='auto', choices=['auto', 'cuda', 'cpu', 'mps'],
+                                 help='device selection; LithoMamba selective scan requires CUDA')
+        self.parser.add_argument('--gpu_ids', type=int, default=0,
+                                 help='single CUDA device index; -1 selects CPU')
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints',
                                  help='models are saved here')
-        self.parser.add_argument('--model', type=str, default='pix2pixHD',
-                                 help='which model to use')
+        self.parser.add_argument('--model', type=str, default='mamba',
+                                 help='experiment metadata; the release entry points use LithoMamba')
         self.parser.add_argument('--norm', type=str, default='instance',
                                  help='instance normalization or batch normalization')
         self.parser.add_argument('--use_dropout', action='store_true',
@@ -30,13 +31,16 @@ class BaseOptions:
                                  help="Supported data type i.e. 8, 16, 32 bit")
         """ Verbose mode: 详细模式. Terminal output more detailed information. """
         self.parser.add_argument('--verbose', action='store_true', default=False, help='toggles verbose')
-        self.parser.add_argument('--fp16', action='store_true', default=True, help='train with AMP')
+        self.parser.add_argument('--fp16', action=argparse.BooleanOptionalAction, default=True,
+                                 help='train with AMP; --no-fp16 disables mixed precision')
+        self.parser.add_argument('--pretrained_path', default='',
+                                 help='optional VMamba initialization checkpoint, used only for a fresh training run')
         """ local_rank: the rank of the process on the local machine. Used for multi-node training """
         self.parser.add_argument('--local_rank', type=int, default=0, help='local rank for distributed training')
 
         # for data
-        self.parser.add_argument('--layout_image_dir', type=str, default='../sjw/layout2adi0907/train/layout', help='the directory of label files')
-        self.parser.add_argument('--sem_image_dir', type=str, default='../sjw/layout2adi0907/train/ADI', help='the directory of real images')
+        self.parser.add_argument('--layout_image_dir', type=str, default='./datasets/train/layout', help='directory of layout images')
+        self.parser.add_argument('--sem_image_dir', type=str, default='./datasets/train/sem', help='directory of paired SEM images')
         self.parser.add_argument('--shuffle', action='store_true', help='whether to shuffle training data')
         self.parser.add_argument('--num_workers', type=int, default=16, help='number of worker processes')
 
@@ -49,7 +53,7 @@ class BaseOptions:
         self.parser.add_argument('--output_nc', type=int, default=1, help='# of output image channels')
 
         # for setting inputs
-        self.parser.add_argument('--data_root', type=str, default='../sjw/layout2adi0927/')
+        self.parser.add_argument('--data_root', type=str, default='./datasets/')
         self.parser.add_argument('--resize_or_crop', type=str, default='scale_short_and_crop',
                                  help='scaling and cropping of images at load time [resize_and_crop|crop|scale_short|scale_short_and_crop]')
         self.parser.add_argument('--serial_batches', action='store_true',
@@ -108,10 +112,10 @@ class BaseOptions:
         # if len(self.opt.gpu_ids) > 0:
         #     torch.cuda.set_device(self.opt.gpu_ids[0])
 
-        if torch.cuda.is_available():
-            self.opt.device = 'cuda'
-        else:
-            self.opt.device = 'mps:0'
+        if self.opt.gpu_ids < 0:
+            self.opt.device = 'cpu'
+        elif self.opt.device == 'auto':
+            self.opt.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         args = vars(self.opt)
 

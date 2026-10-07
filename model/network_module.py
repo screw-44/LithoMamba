@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.onnx.symbolic_opset9 import tensor
 
 '''----------------------Generator----------------------'''
 class UNet(nn.Module):
@@ -237,24 +236,13 @@ class GANLoss(nn.Module):
         else:
             return torch.tensor(self.fake_label).expand_as(_input).to(self.opt.device)
 
-    def __call__(self, input, target_is_real):
-        """
-        :param input: input is always with-in a list, and the last one is the latest result
-        :param target_is_real:
-        :return:
-        """
-        # When input is [[tensor, tensor], [tensor, tensor], may be is multi-batch scenario?
-        if isinstance(input[0], list):
-            loss = 0
-            for input_i in input:
-                pred = input_i[-1] # get the tensor out of the list
-                target_tensor = self.get_target_tensor(pred, target_is_real)
-                loss += self.loss(pred, target_tensor)
-            return loss
-        else:
-        # When input is [tensor, tensor, tensor]
-            target_tensor = self.get_target_tensor(input[-1], target_is_real)
-            return self.loss(input[-1], target_tensor)
+    def forward(self, input, target_is_real):
+        """Compute the loss over the full batch, including multi-scale outputs."""
+        if torch.is_tensor(input):
+            return self.loss(input, self.get_target_tensor(input, target_is_real))
+        if isinstance(input[0], (list, tuple)):
+            return sum(self.forward(scale[-1], target_is_real) for scale in input)
+        return self.forward(input[-1], target_is_real)
 
 
 if __name__ == '__main__':

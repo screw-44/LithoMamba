@@ -1,119 +1,84 @@
-import torch.utils.data as data
-import torchvision.transforms as transforms
-import numpy as np
+"""Load grayscale layout/SEM pairs with shared spatial augmentation."""
 
+from pathlib import Path
 from PIL import Image
 import torch
-import os
-
+from torch.utils.data import Dataset
 from torchvision.datasets.folder import IMG_EXTENSIONS
+from torchvision import transforms
+from torchvision.transforms import functional as TF
 
 
-def get_transform(opt, method=transforms.InterpolationMode.BILINEAR, normalize=True):
-    transform_list = []
-    transform_list.append(transforms.Resize([opt.load_size, opt.load_size], method))
+def make_dataset(directory):
+    root = Path(directory)
+    if not root.is_dir():
+        raise FileNotFoundError('Image directory does not exist: {}'.format(root))
+    return sorted(path for path in root.rglob('*')
+                  if path.is_file() and path.suffix.lower() in IMG_EXTENSIONS)
 
 
-    if 'resize' in opt.resize_or_crop:
-        transform_list.append(transforms.Resize([opt.load_size, opt.load_size], method))
-    elif 'scale_short' in opt.resize_or_crop:
-        transform_list.append(transforms.Resize(opt.load_size, method))
+def index_images(directory):
+    root = Path(directory)
+    indexed = {}
+    for path in make_dataset(directory):
+        key = path.relative_to(root).with_suffix('').as_posix()
+        if key in indexed:
+            raise ValueError('Duplicate image pairing key: {}'.format(key))
+        indexed[key] = path
+    return indexed
 
-    if 'crop' in opt.resize_or_crop:
-        transform_list.append(AlignedRandomCrop(opt.crop_size))
 
-    if opt.is_train: # during testing, is_train is false. (may be in training it is also false)
-        transform_list.append(AlignedRandomFlip(opt.flip_ratio))
-
-    transform_list.append(transforms.ToTensor())
-    if normalize:
-        transform_list.append(transforms.Normalize(mean=0.5, std=0.5))
-
-    return transforms.Compose(transform_list)
-
-def is_image_file(filename): return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
-
-def make_dataset(_dir):
-    images_paths = []
-    assert os.path.isdir(_dir)
-
-    for root, folder_name, filenames in sorted(os.walk(_dir)):
-        for filename in filenames:
-            if is_image_file(filename):
-                images_paths.append(os.path.join(root, filename))
-
-    return images_paths
-
-class AlignedDataset(data.Dataset):
-
+class AlignedDataset(Dataset):
     def __init__(self, opt):
-        super(AlignedDataset, self).__init__()
-
         self.opt = opt
-        self.root = opt.data_root
-        # layout path
-        self.layout_paths = sorted(make_dataset(opt.layout_image_dir))
-        # sem path
-        self.sem_paths = sorted(make_dataset(opt.sem_image_dir))
-
-        self.dataset_size = len(self.layout_paths)
+        layouts = index_images(opt.layout_image_dir)
+        sems = index_images(opt.sem_image_dir)
+        if not layouts:
+            raise ValueError('No layout/SEM image pairs found.')
+        if layouts.keys() != sems.keys():
+            missing_sem = sorted(layouts.keys() - sems.keys())[:5]
+            missing_layout = sorted(sems.keys() - layouts.keys())[:5]
+            raise ValueError('Image pairs must match relative filenames without extensions. '
+                             'Missing SEM: {}; missing layout: {}'.format(missing_sem, missing_layout))
+        if opt.load_size < 1 or opt.crop_size < 1:
+            raise ValueError('Image sizes must be positive.')
+        if 'crop' in opt.resize_or_crop and opt.crop_size > opt.load_size:
+            raise ValueError('--crop_size must not exceed --load_size.')
+        if not 0 <= opt.flip_ratio <= 1:
+            raise ValueError('--flip_ratio must be between 0 and 1.')
+        self.pairs = [(layouts[key], sems[key]) for key in sorted(layouts)]
 
     def __getitem__(self, index):
-        # layout
-        layout_path = self.layout_paths[index]
-        layout = Image.open(layout_path).convert('L')
-        transform = get_transform(self.opt)
-        layout_tensor = transform(layout)
-
-        # sem
-        sem_path = self.sem_paths[index]
-        sem_image = Image.open(sem_path).convert('L')
-        sem_tensor = transform(sem_image)
-
-        input_dict = {'layout': layout_tensor, 'sem': sem_tensor, 'path': layout_path}
-        return input_dict
+        layout_path, sem_path = self.pairs[index]
+        with Image.open(layout_path) as image:
+            layout = image.convert('L')
+        with Image.open(sem_path) as image:
+            sem = image.convert('L')
+        if layout.size != sem.size:
+            raise ValueError('Paired image dimensions differ: {} and {}'.format(layout_path, sem_path))
+        # Retain the released square resizing convention, then augment both images together.
+        size = [self.opt.load_size, self.opt.load_size]
+        layout = TF.resize(layout, size, transforms.InterpolationMode.BILINEAR)
+        sem = TF.resize(sem, size, transforms.InterpolationMode.BILINEAR)
+        if 'crop' in self.opt.resize_or_crop:
+            if self.opt.is_train:
+                parameters = transforms.RandomCrop.get_params(layout, (self.opt.crop_size,) * 2)
+                layout, sem = TF.crop(layout, *parameters), TF.crop(sem, *parameters)
+            else:
+                layout = TF.center_crop(layout, self.opt.crop_size)
+                sem = TF.center_crop(sem, self.opt.crop_size)
+        if self.opt.is_train:
+            if torch.rand(()).item() < self.opt.flip_ratio:
+                layout, sem = TF.hflip(layout), TF.hflip(sem)
+            if torch.rand(()).item() < self.opt.flip_ratio:
+                layout, sem = TF.vflip(layout), TF.vflip(sem)
+        layout = TF.normalize(TF.to_tensor(layout), [0.5], [0.5])
+        sem = TF.normalize(TF.to_tensor(sem), [0.5], [0.5])
+        return {'layout': layout, 'sem': sem, 'path': str(layout_path)}
 
     def __len__(self):
-        return self.dataset_size // self.opt.batch_size * self.opt.batch_size
+        return len(self.pairs)
 
     @property
     def name(self):
         return 'AlignedDataset'
-
-class AlignedRandomCrop(transforms.RandomCrop):
-    def __init__(self, crop_size):
-        super(AlignedRandomCrop, self).__init__(crop_size)
-        self.count, self.seed = 0, torch.seed()
-
-    def forward(self, image):
-        if self.count ==  2: # for paired data
-            self.count, self.seed = 0, torch.seed()  # get new random seed
-        self.count += 1
-        torch.manual_seed(self.seed)
-        return super().forward(image)
-
-class AlignedRandomFlip(transforms.RandomHorizontalFlip, transforms.RandomVerticalFlip):
-    def __init__(self, flip_ratio):
-        transforms.RandomHorizontalFlip.__init__(self, flip_ratio)
-        transforms.RandomVerticalFlip.__init__(self, flip_ratio)
-        self.count, self.seed = 0, torch.seed()
-
-    def forward(self, image):
-        if self.count == 2: # for paired data
-            self.count, self.seed = 0, torch.seed()  # get new random seed
-        self.count += 1
-        torch.manual_seed(self.seed)
-        image = transforms.RandomHorizontalFlip.forward(self, image)
-        torch.manual_seed(self.seed)
-        return transforms.RandomVerticalFlip.forward(self, image)
-
-
-
-
-
-if __name__ == '__main__':
-    from options.train_options import TrainOptions
-    opt = TrainOptions().parse()
-    dataset = AlignedDataset(opt)
-    print(dataset.__getitem__(0))
-

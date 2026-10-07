@@ -30,11 +30,9 @@ def mkdir(path : str):
 def save_network(network, save_dir, network_label, epoch_label):
     save_filename = 'epoch_%s_%s.pth' % (epoch_label, network_label)
     save_path = os.path.join(save_dir, save_filename)
-    torch.save(network.cpu().state_dict(), save_path)
-    if torch.cuda.is_available():
-        network.to(device='cuda')
-    else:
-        network.to(device='mps:0')
+    mkdir(save_dir)
+    state = {key: value.detach().cpu() for key, value in network.state_dict().items()}
+    torch.save(state, save_path)
 
 # helper loading function that can be used by subclasses
 def load_network(network, save_dir, network_label, epoch_label):
@@ -43,7 +41,7 @@ def load_network(network, save_dir, network_label, epoch_label):
     if not os.path.isfile(save_path):
         raise FileNotFoundError('%s not exists yet!' % save_path)
     else:
-        network.load_state_dict(torch.load(save_path))
+        network.load_state_dict(torch.load(save_path, map_location='cpu', weights_only=True))
     print("INFO: Load network: %s, at epoch %s" % (epoch_label, network_label))
 
 def tensor2array(image : torch.tensor, _type=np.uint8, normalize=True) -> np.ndarray:

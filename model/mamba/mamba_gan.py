@@ -3,7 +3,6 @@
 import torch
 import torch.nn as nn
 
-from model.mamba.mamba_d import MambaD
 from model.mamba.networks.vision_mamba import MambaUnet
 
 from model.network_module import NLayerDiscriminator, GANLoss, VanillaDiscriminator
@@ -15,7 +14,8 @@ class MambaGAN(nn.Module):
 
 
         self.net_g = MambaUnet(opt.load_size, 1).to(opt.device)
-        self.net_g.load_from('./pretrained_ckpt/vmamba_tiny_e292.pth') # comment说必须要有pre-trained的作为载入值，和transformer类似
+        if opt.is_train and not opt.continue_train and opt.pretrained_path:
+            self.net_g.load_from(opt.pretrained_path)
 
         if opt.is_train:
             # self.net_d = MambaD(opt, input_size=opt.load_size, in_chans=2).to(opt.device) # This is for MambaDiscriminator
@@ -44,7 +44,7 @@ class MambaGAN(nn.Module):
         loss_g_fakeIsTrue = self.criterionGAN(pred_fake, True)
 
         loss_g_l1 = self.criterionL1(fake_sem, sem)
-        return loss_g_fakeIsTrue + loss_g_l1 * 1
+        return loss_g_fakeIsTrue + loss_g_l1 * self.opt.lambda_l1
 
     def backward_d(self, layout, fake_sem, sem):
         pred_fake = self.discriminate(layout, fake_sem.detach())
@@ -54,27 +54,4 @@ class MambaGAN(nn.Module):
         loss_d_trueIsTrue = self.criterionGAN(pred_true, True)
 
         return (loss_d_fakeIsFake + loss_d_trueIsTrue) * 0.1
-
-if __name__ == '__main__':
-    from options.train_options import TrainOptions
-    opt = TrainOptions().parse()
-    mamba = MambaGAN(opt)
-
-    layout = torch.ones(8, 1, 256, 256).to(opt.device)
-    sem = torch.ones(8, 1, 256, 256).to(opt.device) * 5 + 4
-
-    for i in range(100):
-        fake_sem = mamba(layout)
-        loss_g = mamba.backward_g(layout, fake_sem, sem)
-        loss_g.backward()
-        mamba.optimizer_g.step()
-        mamba.optimizer_g.zero_grad()
-
-        loss_d = mamba.backward_d(layout, fake_sem, sem)
-        loss_d.backward()
-        mamba.optimizer_g.step()
-        mamba.optimizer_g.zero_grad()
-
-        print("Loss is g:%s, d:%s" % (loss_g, loss_d))
-
 
